@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-base-900 text-ink font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
+  }
+  /* Tabular figures everywhere a number is compared down a column. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-base-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-base-600 rounded-full border-2 border-base-900;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-base-500;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-base-900;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-base-850 border border-base-700 rounded-lg;
+  }
+  .panel-header {
+    @apply flex items-center justify-between px-4 py-3 border-b border-base-700;
+  }
+  .label {
+    @apply text-2xs font-semibold uppercase tracking-wider text-ink-faint;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5
+           text-sm font-medium transition-colors disabled:opacity-40
+           disabled:cursor-not-allowed whitespace-nowrap;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white hover:bg-accent-dim;
+  }
+  .btn-ghost {
+    @apply btn bg-base-750 text-ink-muted hover:bg-base-700 hover:text-ink
+           border border-base-700;
+  }
+  .btn-danger {
+    @apply btn bg-loss/15 text-loss border border-loss/30 hover:bg-loss/25;
+  }
+  .input {
+    @apply w-full rounded-md bg-base-800 border border-base-700 px-3 py-1.5 text-sm
+           text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs
+           font-semibold uppercase tracking-wide;
+  }
+  .th {
+    @apply px-3 py-2 text-left text-2xs font-semibold uppercase tracking-wider
+           text-ink-faint whitespace-nowrap;
+  }
+  .td {
+    @apply px-3 py-2 text-sm whitespace-nowrap;
+  }
+}
