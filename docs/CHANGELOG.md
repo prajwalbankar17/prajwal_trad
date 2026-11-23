@@ -49,7 +49,7 @@ Initial build. Phases 0–7 complete; Phase 8 deferred; Phase 9 by design.
 - Indian number formatting, colour-blind-safe P&L palette.
 
 **Testing and docs**
-- 243 backend tests, 18 frontend tests.
+- 245 backend tests, 18 frontend tests.
 - 18 documents.
 
 ### Safety
@@ -68,6 +68,16 @@ Initial build. Phases 0–7 complete; Phase 8 deferred; Phase 9 by design.
 - **Liquidity sweep had a malformed `allow_short` condition** that could gate
   the wrong branch; the long side is no longer affected by it.
 - **SQL NULL parameters** needed explicit casts for PostgreSQL type inference.
+- **The paper-only constraint tests never tested the constraint.** Both
+  borrowed rows that happened to already be in the database. The `orders`
+  test called `pytest.skip()` when the table was empty, so it reported green
+  while asserting nothing. The `positions` test built an `INSERT` that omitted
+  eleven NOT NULL columns, so it raised `NotNullViolation` rather than hitting
+  the `CHECK` — it would have passed with the paper-only constraint dropped.
+  Both now create their own instrument, assert on the constraint *by name*,
+  and are paired with a positive control proving the same statement succeeds
+  with `execution_mode = 'PAPER'`. Found when purging demo data emptied the
+  tables they had been silently relying on.
 
 ### Known gaps
 

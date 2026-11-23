@@ -83,7 +83,7 @@
 - Database `CHECK` constraint rejects `execution_mode='LIVE'`.
 
 ### Testing
-- **243 backend tests**, all passing: indicators (incl. causality for every
+- **245 backend tests**, all passing: indicators (incl. causality for every
   indicator and every strategy), charges, execution, strategies, metrics,
   risk sizing, security, safety, aggregation, calendar, API, database.
 - **18 frontend tests**, all passing: formatting, `DataTable` behaviour,
@@ -175,7 +175,7 @@ Nothing blocked is faked. Each returns a specific error naming its dependency.
 ## Test results
 
 ```
-backend   243 passed in 4.70s
+backend   245 passed in 3.34s
 frontend   18 passed in 1.44s
 lint       ruff: all checks passed
 build      vite: built in 3.48s

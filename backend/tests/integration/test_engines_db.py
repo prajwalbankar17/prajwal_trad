@@ -6,6 +6,8 @@ signal deduplication and the paper-only database constraint.
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
@@ -39,35 +41,95 @@ def test_trading_modules_start_inactive(db_session):
     assert all(s.monitor_open_positions for s in states)
 
 
-def test_orders_table_rejects_live_execution_mode(db_session):
-    """The database itself refuses to record a live order."""
-    existing = db_session.execute(text("SELECT id FROM orders LIMIT 1")).first()
-    if existing is None:
-        pytest.skip("No orders to test the constraint against.")
+def _throwaway_instrument(db_session) -> str:
+    """Create an instrument that exists only inside this test's transaction.
 
-    with pytest.raises(IntegrityError):
-        db_session.execute(
-            text("UPDATE orders SET execution_mode = 'LIVE' WHERE id = :id"),
-            {"id": existing[0]},
-        )
-        db_session.flush()
+    These constraint tests used to borrow whatever rows happened to already be
+    in the database.  That made the most safety-critical check in the project
+    depend on unrelated leftover data: against an empty instruments table the
+    INSERT ... SELECT matched nothing, no error was raised, and the paper-only
+    CHECK was never exercised.  The orders variant was worse - it called
+    pytest.skip(), so the suite stayed green while testing nothing at all.
+    """
+    return db_session.execute(
+        text(
+            "INSERT INTO instruments (id, tradingsymbol, exchange, segment, "
+            "lot_size, tick_size, is_active, is_tradable, meta, created_at, "
+            "updated_at) VALUES (gen_random_uuid(), :sym, 'NSE', 'EQUITY', 1, "
+            "0.05, true, true, '{\"is_test\": true}'::jsonb, now(), now()) "
+            "RETURNING id"
+        ),
+        {"sym": f"ZZTEST{uuid4().hex[:8].upper()}"},
+    ).scalar_one()
+
+
+ORDER_INSERT = (
+    "INSERT INTO orders (id, execution_mode, instrument_id, side, order_type, "
+    "product, quantity, filled_quantity, status, simulation, created_at, "
+    "updated_at) VALUES (gen_random_uuid(), :mode, :iid, 'BUY', 'MARKET', "
+    "'MIS', 1, 0, 'PENDING', '{}'::jsonb, now(), now())"
+)
+
+# Every NOT NULL column has to be present.  The previous version of this
+# INSERT omitted eleven of them (trailing_stop_active, the pnl columns,
+# charge_breakdown, capital_deployed, margin_used, is_backtest).  It still
+# raised IntegrityError, so the test passed - but from a NotNullViolation,
+# never from the paper-only CHECK.  That test would have gone on passing with
+# the CHECK constraint deleted.
+POSITION_INSERT = (
+    "INSERT INTO positions (id, execution_mode, module, instrument_id, "
+    "direction, product, quantity, remaining_quantity, entry_price, "
+    "entry_time, trade_date, stop_loss, target, initial_stop_loss, "
+    "trailing_stop_active, status, gross_pnl, charges, net_pnl, "
+    "unrealised_pnl, charge_breakdown, max_favourable_excursion, "
+    "max_adverse_excursion, capital_deployed, margin_used, is_backtest, "
+    "created_at, updated_at) "
+    "VALUES (gen_random_uuid(), :mode, 'EQUITY', :iid, 'BUY', 'MIS', 1, 1, "
+    "100, now(), current_date, 99, 101, 99, false, 'OPEN', 0, 0, 0, 0, "
+    "'{}'::jsonb, 0, 0, 100, 0, false, now(), now())"
+)
+
+
+@pytest.mark.parametrize(
+    ("statement", "constraint"),
+    [
+        (ORDER_INSERT, "orders_paper_only"),
+        (POSITION_INSERT, "positions_paper_only"),
+    ],
+    ids=["orders", "positions"],
+)
+def test_table_rejects_live_execution_mode(db_session, statement, constraint):
+    """The database itself refuses to record anything but paper execution."""
+    instrument_id = _throwaway_instrument(db_session)
+
+    with pytest.raises(IntegrityError) as excinfo:
+        with db_session.begin_nested():
+            db_session.execute(text(statement), {"mode": "LIVE", "iid": instrument_id})
+
+    # Assert on the constraint by name.  A test that accepts any IntegrityError
+    # would still pass if the CHECK were dropped and the row failed a foreign
+    # key or a NOT NULL instead - that is a false green on the one rule the
+    # whole platform rests on.
+    assert constraint in str(excinfo.value)
     db_session.rollback()
 
 
-def test_positions_table_rejects_live_execution_mode(db_session):
-    with pytest.raises(IntegrityError):
-        db_session.execute(
-            text(
-                "INSERT INTO positions (id, execution_mode, module, instrument_id, "
-                "direction, product, quantity, remaining_quantity, entry_price, "
-                "entry_time, trade_date, stop_loss, initial_stop_loss, target, status, "
-                "created_at, updated_at) "
-                "SELECT gen_random_uuid(), 'LIVE', 'EQUITY', id, 'BUY', 'MIS', 1, 1, "
-                "100, now(), current_date, 99, 99, 101, 'OPEN', now(), now() "
-                "FROM instruments LIMIT 1"
-            )
-        )
-        db_session.flush()
+@pytest.mark.parametrize(
+    "statement", [ORDER_INSERT, POSITION_INSERT], ids=["orders", "positions"]
+)
+def test_table_accepts_paper_execution_mode(db_session, statement):
+    """Positive control for the test above.
+
+    Without this, the rejection test could pass for the wrong reason: any
+    malformed INSERT raises IntegrityError.  This proves the statement is
+    otherwise valid, so the only thing the database objects to is the value
+    of execution_mode.
+    """
+    instrument_id = _throwaway_instrument(db_session)
+
+    with db_session.begin_nested():
+        db_session.execute(text(statement), {"mode": "PAPER", "iid": instrument_id})
+
     db_session.rollback()
 
 

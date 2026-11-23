@@ -38,7 +38,7 @@ including what is **not** done, is tracked in [PROJECT_STATUS.md](PROJECT_STATUS
 | Background workers (`backend/app/workers/`) | **Empty placeholder** — Phase 8 |
 | VPS deployment, Nginx, HTTPS, backups (`infra/`) | **Empty placeholder** — Phase 8 |
 
-Tests: **243 backend**, **18 frontend**, all passing.
+Tests: **245 backend**, **18 frontend**, all passing.
 
 ---
 
@@ -168,7 +168,7 @@ Every command uses the project venv directly, so no `activate` step is needed.
 
 ```bash
 .venv/bin/uvicorn app.main:app --reload --port 8000   # API server
-.venv/bin/pytest                                      # all 243 tests
+.venv/bin/pytest                                      # all 245 tests
 .venv/bin/pytest tests/unit                           # unit tests only
 .venv/bin/pytest tests/integration                    # integration tests (need the DB)
 .venv/bin/pytest tests/unit/test_indicators.py -v     # one file, verbose
@@ -280,7 +280,7 @@ prajwal_trad/
 │   ├── alembic/versions/         d6a740e46dc8 initial schema
 │   │                             0002 yearly intraday partitions
 │   ├── scripts/                  seed.py, load_demo_data.py
-│   └── tests/                    243 tests
+│   └── tests/                    245 tests
 │       ├── unit/                 indicators(31) strategies(108) aggregation(21)
 │       │                         metrics(15) security(14) execution(13)
 │       │                         charges(8) risk_sizing(8) safety(8)
@@ -319,7 +319,7 @@ prajwal_trad/
 │       │                         fno, system, audit, users, settings, …)
 │       └── test/                 18 Vitest tests + setup
 │
-├── docs/                         18 documents (see below)
+├── docs/                         19 documents (see below)
 ├── data/                         gitignored working data
 │   ├── sqlite_source/            put the 180 GB source file here
 │   ├── exports/                  CSV exports
@@ -400,7 +400,7 @@ having none.
 | [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) | All 56 tables, partitioning, indexing |
 | [docs/STRATEGY_DOCUMENTATION.md](docs/STRATEGY_DOCUMENTATION.md) | All 20 strategies and their exact rules |
 | [docs/BACKTESTING_GUIDE.md](docs/BACKTESTING_GUIDE.md) | Running backtests, reading results, avoiding self-deception |
-| [docs/DATA_IMPORT_GUIDE.md](docs/DATA_IMPORT_GUIDE.md) | Importing the 180 GB SQLite database |
+| [docs/DATA_IMPORT_GUIDE.md](docs/DATA_IMPORT_GUIDE.md) | Importing a large SQLite candle database (**note: the actual source is a PostgreSQL 17 cluster, not SQLite — see HANDOVER.md**) |
 | [docs/BROKER_INTEGRATION.md](docs/BROKER_INTEGRATION.md) | Kite Connect setup and what is blocked |
 | [docs/AI_INTEGRATION.md](docs/AI_INTEGRATION.md) | Claude integration and its hard limits |
 | [docs/SECURITY.md](docs/SECURITY.md) | Auth, RBAC, secrets, the paper-only guarantee |
@@ -412,6 +412,7 @@ having none.
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Phase 8 plan (not yet implemented) |
 | [docs/VPS_SETUP.md](docs/VPS_SETUP.md) | Phase 8 server provisioning plan |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Notable changes |
+| [docs/HANDOVER.md](docs/HANDOVER.md) | Session handover: current state, the real data situation, Windows steps |
 
 ---
 

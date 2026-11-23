@@ -1,7 +1,7 @@
 # Testing
 
 ```
-backend   243 passed
+backend   245 passed
 frontend   18 passed
 ```
 
